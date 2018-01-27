@@ -15,7 +15,7 @@ class StateController(val stateService: StateService) {
   @GetMapping("initial")
   fun initial(): InitialStateDto {
     val states = stateService.getStates()
-    val nodes = states.values.map { NodeDto(it.id, it.name, it.last_hash) }
+    val nodes = states.values.map { NodeDto(it.id, it.name, it.last_hash, it.url) }
     val links = states.values.flatMap { it.links }.distinct()
     return InitialStateDto(nodes, links.map { listOf(it.id1, it.id2) })
   }
@@ -54,7 +54,8 @@ class StateController(val stateService: StateService) {
   data class NodeDto(
     var id: Int = -1,
     var name: String = "",
-    var last_hash: String = ""
+    var last_hash: String = "",
+    var url: String = ""
   )
 
   data class NodeLink(
