@@ -22,13 +22,34 @@ class StateController(val stateService: StateService) {
 
   @GetMapping("get_updates")
   fun updates(): UpdateStateDto {
+    val addedNodes = stateService.getAddedNodes()
     val states = stateService.getStates()
+
+    val addedLinks = mutableListOf<NodeLink>()
+    val removedNodes = mutableListOf<Int>()
+    val removedLinks = mutableListOf<NodeLink>()
+
     states.keys.forEach { id ->
       val url = states[id]?.url
-      val stateDto = restTemplate.getForObject("http://$url/management/status", StateService.StateDto::class.java)
-      stateService.updateState(id, stateDto)
+      try {
+        val newState = restTemplate.getForObject("http://$url/management/status", StateService.StateDto::class.java)
+
+        states[newState.id]?.let { currentState ->
+          removedLinks.addAll(currentState.links.filterNot { newState.links.contains(it) })
+          addedLinks.addAll(newState.links.filterNot { currentState.links.contains(it) })
+        }
+
+        stateService.updateState(id, newState)
+      } catch (t: Throwable) {
+        stateService.removeNode(id)
+        removedNodes.add(id)
+      }
     }
-    return UpdateStateDto()
+
+    return UpdateStateDto(
+      AddedNodesDto(addedNodes, addedLinks),
+      RemovedNodesDto(removedNodes, removedLinks)
+    )
   }
 
   data class InitialStateDto(
@@ -42,7 +63,7 @@ class StateController(val stateService: StateService) {
   )
 
   data class RemovedNodesDto(
-    var nodes: List<String> = emptyList(),
+    var nodes: List<Int> = emptyList(),
     var links: List<NodeLink> = emptyList()
   )
 
