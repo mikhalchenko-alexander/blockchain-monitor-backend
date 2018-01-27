@@ -20,14 +20,15 @@ class StateController(val stateService: StateService) {
     return InitialStateDto(nodes, links.map { listOf(it.id1, it.id2) })
   }
 
-  @GetMapping("get_updates")
+  @GetMapping("nodes_updates")
   fun updates(): UpdateStateDto {
     val addedNodes = stateService.getAddedNodes()
     val states = stateService.getStates()
 
-    val addedLinks = mutableListOf<NodeLink>()
+    val addedLinks = mutableListOf<List<Int>>()
     val removedNodes = mutableListOf<Int>()
     val removedLinks = mutableListOf<NodeLink>()
+//    addedLinks.add(listOf(63, 69))
 
     states.keys.forEach { id ->
       val url = states[id]?.url
@@ -36,7 +37,7 @@ class StateController(val stateService: StateService) {
 
         states[newState.id]?.let { currentState ->
           removedLinks.addAll(currentState.links.filterNot { newState.links.contains(it) })
-          addedLinks.addAll(newState.links.filterNot { currentState.links.contains(it) })
+          addedLinks.addAll(newState.links.filterNot { currentState.links.contains(it) }.map { listOf(it.id1, it.id2) })
         }
 
         stateService.updateState(id, newState)
@@ -69,7 +70,7 @@ class StateController(val stateService: StateService) {
 
   data class AddedNodesDto(
     var nodes: List<NodeDto> = emptyList(),
-    var links: List<NodeLink> = emptyList()
+    var links: List<List<Int>> = emptyList()
   )
 
   data class NodeDto(
