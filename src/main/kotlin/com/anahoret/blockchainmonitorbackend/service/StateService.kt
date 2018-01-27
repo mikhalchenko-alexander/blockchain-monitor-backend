@@ -27,8 +27,8 @@ class StateService {
   }
 
   fun removeNode(id: Int) {
-    states.remove(id)
-    saveToFile()
+//    states.remove(id)
+//    saveToFile()
   }
 
   fun getStates(): Map<Int, StateDto> = states.toMap()
