@@ -13,14 +13,14 @@ class AddNodeController(val stateService: StateService) {
 
   @PostMapping("add_node")
   fun addNode(@RequestBody request: AddNodeRequest): AddNodeRequest {
-    val stateDto = restTemplate.getForObject("http://${request.url}/management/state", StateService.StateDto::class.java)
-    stateService.states[request.id] = stateDto
+    val stateDto = restTemplate.getForObject("http://${request.url}/management/status", StateService.StateDto::class.java)
+    stateService.updateState(request.id, stateDto)
 
     return request
   }
 
   data class AddNodeRequest(
-    var id: String = "",
+    var id: Int = -1,
     var name: String = "",
     var url: String = ""
   )

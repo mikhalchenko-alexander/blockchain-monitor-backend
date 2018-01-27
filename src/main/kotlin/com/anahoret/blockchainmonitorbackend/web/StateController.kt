@@ -1,10 +1,12 @@
 package com.anahoret.blockchainmonitorbackend.web
 
 import com.anahoret.blockchainmonitorbackend.service.StateService
+import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestTemplate
 
+@CrossOrigin(maxAge = 3600)
 @RestController
 class StateController(val stateService: StateService) {
 
@@ -12,18 +14,20 @@ class StateController(val stateService: StateService) {
 
   @GetMapping("initial")
   fun initial(): InitialStateDto {
-    val nodes = stateService.states.values.map { NodeDto(it.id, it.name) }
-    val links = stateService.states.values.flatMap { it.links }.distinct()
-    return InitialStateDto(nodes, links)
+    val states = stateService.getStates()
+    val nodes = states.values.map { NodeDto(it.id, it.name, it.last_hash) }
+    val links = states.values.flatMap { it.links }.distinct()
+    return InitialStateDto(nodes, links.map { listOf(it.id1, it.id2) })
   }
 
   @GetMapping("get_updates")
   fun updates(): UpdateStateDto {
-    stateService.states.keys.forEach { id ->
-      val url = stateService.states[id]?.url
-      val stateDto = restTemplate.getForObject("http://$url/management/state", StateService.StateDto::class.java)
+    val states = stateService.getStates()
+    states.keys.forEach { id ->
+      val url = states[id]?.url
+      val stateDto = restTemplate.getForObject("http://$url/management/status", StateService.StateDto::class.java)
 
-      stateService.states[id] = stateDto
+      stateService.updateState(id, stateDto)
     }
 
     return UpdateStateDto()
@@ -31,7 +35,7 @@ class StateController(val stateService: StateService) {
 
   data class InitialStateDto(
     var nodes: List<NodeDto> = emptyList(),
-    var links: List<NodeLink> = emptyList()
+    var links: List<List<Int>> = emptyList()
   )
 
   data class UpdateStateDto(
@@ -50,13 +54,14 @@ class StateController(val stateService: StateService) {
   )
 
   data class NodeDto(
-    var id: String = "",
-    var name: String = ""
+    var id: Int = -1,
+    var name: String = "",
+    var last_hash: String = ""
   )
 
   data class NodeLink(
-    var id1: String = "",
-    var id2: String = ""
+    var id1: Int = -1,
+    var id2: Int = -1
   ) {
 
     override fun equals(other: Any?): Boolean {
