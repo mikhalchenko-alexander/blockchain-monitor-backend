@@ -15,7 +15,6 @@ class AddNodeController(val stateService: StateService) {
   fun addNode(@RequestBody request: AddNodeRequest): AddNodeRequest {
     val stateDto = restTemplate.getForObject("http://${request.url}/management/status", StateService.StateDto::class.java)
     stateService.updateState(request.id, stateDto)
-
     return request
   }
 

@@ -26,10 +26,8 @@ class StateController(val stateService: StateService) {
     states.keys.forEach { id ->
       val url = states[id]?.url
       val stateDto = restTemplate.getForObject("http://$url/management/status", StateService.StateDto::class.java)
-
       stateService.updateState(id, stateDto)
     }
-
     return UpdateStateDto()
   }
 
@@ -66,13 +64,13 @@ class StateController(val stateService: StateService) {
 
     override fun equals(other: Any?): Boolean {
       val n2 = other as NodeLink
-      val l1 = listOf(id1.toInt(), id2.toInt()).sorted()
-      val l2 = listOf(n2.id1.toInt(), n2.id2.toInt()).sorted()
+      val l1 = listOf(id1, id2).sorted()
+      val l2 = listOf(n2.id1, n2.id2).sorted()
       return l1[0] == l2[0] && l1[1] == l2[1]
     }
 
     override fun hashCode(): Int {
-      return listOf(id1.toInt(), id2.toInt()).sorted().hashCode()
+      return listOf(id1, id2).sorted().hashCode()
     }
 
   }

@@ -13,16 +13,7 @@ class StateService {
   private val mapper = ObjectMapper()
   private val file = File("store.dat")
 
-  private val states =
-    if (file.exists()) {
-      mapper.readValue<List<StateDto>>(file.readText(), object: TypeReference<List<StateDto>>() {})
-        .map {
-          val dto = it as StateDto
-          dto.id to dto
-        }.toMap().toMutableMap()
-    } else {
-      HashMap()
-    }
+  private lateinit var states: MutableMap<Int, StateDto>
 
   fun updateState(id: Int, stateDto: StateDto) {
     states[id] = stateDto
@@ -30,12 +21,19 @@ class StateService {
     file.writeText(mapper.writeValueAsString(states.values.toList()))
   }
 
+  fun getStates(): Map<Int, StateDto> = states.toMap()
+
   @PostConstruct
   fun init() {
-
+    states = if (file.exists()) {
+      mapper.readValue<List<StateDto>>(file.readText(), object: TypeReference<List<StateDto>>() {})
+        .map {
+          it.id to it
+        }.toMap().toMutableMap()
+    } else {
+      HashMap()
+    }
   }
-
-  fun getStates(): Map<Int, StateDto> = states.toMap()
 
   data class StateDto(
     var id: Int = -1,
