@@ -1,7 +1,7 @@
 package com.anahoret.blockchainmonitorbackend.service
 
-import com.anahoret.blockchainmonitorbackend.web.StateController
-import com.fasterxml.jackson.core.type.TypeReference
+import com.anahoret.blockchainmonitorbackend.web.dto.NodeDto
+import com.anahoret.blockchainmonitorbackend.web.dto.StateDto
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
 import java.io.*
@@ -12,14 +12,14 @@ class StateService {
 
   private val mapper = ObjectMapper()
   private val file = File("store.dat")
-  private val addedNodes = mutableListOf<StateController.NodeDto>()
+  private val addedNodes = mutableListOf<NodeDto>()
 
   private lateinit var states: MutableMap<Int, StateDto>
 
   fun updateState(id: Int, stateDto: StateDto) {
     synchronized(addedNodes) {
       if (!states.containsKey(id)) {
-        addedNodes.add(StateController.NodeDto(stateDto.id, stateDto.name, stateDto.last_hash, stateDto.url))
+        addedNodes.add(NodeDto(stateDto.id, stateDto.name, stateDto.last_hash, stateDto.url))
       }
     }
     states[id] = stateDto
@@ -40,28 +40,15 @@ class StateService {
   @PostConstruct
   fun init() {
     states = if (file.exists()) {
-      mapper.readValue<List<StateDto>>(file.readText(), object: TypeReference<List<StateDto>>() {})
-        .map {
-          it.id to it
-        }.toMap().toMutableMap()
+      mapper.readValue<Array<StateDto>>(file, Array<StateDto>::class.java)
+        .associateBy(StateDto::id)
+        .toMutableMap()
     } else {
       HashMap()
     }
   }
 
-  data class StateDto(
-    var id: Int = -1,
-    var name: String = "",
-    var url: String = "",
-    var last_hash: String = "",
-    var neighbours: List<Int> = emptyList()
-  ) {
-    val links by lazy {
-      neighbours.map { StateController.NodeLink(id, it) }
-    }
-  }
-
-  fun getAddedNodes(): List<StateController.NodeDto> {
+  fun getAddedNodes(): List<NodeDto> {
     synchronized(addedNodes) {
       val result = addedNodes.toList()
       addedNodes.clear()
