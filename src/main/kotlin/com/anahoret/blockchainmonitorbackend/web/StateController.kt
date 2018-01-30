@@ -19,7 +19,7 @@ class StateController(val stateService: StateService, val restNodeService: RestN
     val states = stateService.getStates()
     val nodes = states.values.map { NodeDto(it.id, it.name, it.last_hash, it.url) }
     val links = states.values.flatMap { it.links }.distinct()
-    return InitialStateDto(nodes, links.map { listOf(it.id1, it.id2) })
+    return InitialStateDto(nodes, links.map { it.asList })
   }
 
   @GetMapping("nodes_updates")
@@ -29,13 +29,12 @@ class StateController(val stateService: StateService, val restNodeService: RestN
 
     val addedLinks = mutableListOf<List<Int>>()
     val removedNodes = mutableListOf<Int>()
-    val removedLinks = mutableListOf<NodeLinkDto>()
-
+    val removedLinks = mutableListOf<List<Int>>()
     states.values.forEach { currentState ->
       try {
         val newState = restNodeService.getNodeState(currentState.url)
-        removedLinks.addAll(currentState.links.filterNot { newState.links.contains(it) })
-        addedLinks.addAll(newState.links.filterNot { currentState.links.contains(it) }.map { listOf(it.id1, it.id2) })
+        removedLinks.addAll(currentState.links.filterNot { newState.links.contains(it) }.map { it.asList })
+        addedLinks.addAll(newState.links.filterNot { currentState.links.contains(it) }.map { it.asList })
         stateService.updateState(currentState.id, newState)
       } catch (t: Throwable) {
         println("Node ${currentState.id} not responding. ${t.message}")
