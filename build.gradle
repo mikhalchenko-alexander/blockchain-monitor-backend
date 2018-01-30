@@ -32,6 +32,11 @@ repositories {
 	mavenCentral()
 }
 
+jar {
+    baseName = 'app'
+    version = '0.0.1'
+}
+
 bootRun {
 	addResources = true
 }
