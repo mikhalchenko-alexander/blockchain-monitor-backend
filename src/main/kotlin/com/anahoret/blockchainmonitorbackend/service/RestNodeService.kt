@@ -8,7 +8,7 @@ import org.springframework.web.client.RestTemplate
 class RestNodeService(val restTemplate: RestTemplate) {
 
   fun getNodeState(url: String): StateDto {
-    return restTemplate.getForObject("http://$url/management/status", StateDto::class.java)
+    return restTemplate.getForObject("$url/management/status", StateDto::class.java)
   }
 
 }
