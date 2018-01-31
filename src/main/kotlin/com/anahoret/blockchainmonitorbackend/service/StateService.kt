@@ -3,15 +3,18 @@ package com.anahoret.blockchainmonitorbackend.service
 import com.anahoret.blockchainmonitorbackend.web.dto.NodeDto
 import com.anahoret.blockchainmonitorbackend.web.dto.StateDto
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service
-import java.io.*
 import javax.annotation.PostConstruct
 
 @Service
-class StateService {
+class StateService(val redisTemplate: StringRedisTemplate) {
 
+  companion object {
+    const val NODES_STATE_KEY = "nodes.state"
+  }
+  
   private val mapper = ObjectMapper()
-  private val file = File("store.dat")
   private val addedNodes = mutableListOf<NodeDto>()
 
   private lateinit var states: MutableMap<Int, StateDto>
@@ -23,24 +26,25 @@ class StateService {
       }
     }
     states[id] = stateDto
-    saveToFile()
+    persist()
   }
 
   fun removeNode(id: Int) {
 //    states.remove(id)
-//    saveToFile()
+//    persist()
   }
 
   fun getStates(): Map<Int, StateDto> = states.toMap()
 
-  private fun saveToFile() {
-    file.writeText(mapper.writeValueAsString(states.values.toList()))
+  private fun persist() {
+    redisTemplate.opsForValue().set(NODES_STATE_KEY, mapper.writeValueAsString(states.values.toList()))
   }
 
   @PostConstruct
   fun init() {
-    states = if (file.exists()) {
-      mapper.readValue<Array<StateDto>>(file, Array<StateDto>::class.java)
+    states = if (redisTemplate.hasKey(NODES_STATE_KEY)) {
+      val stateStr = redisTemplate.opsForValue().get(NODES_STATE_KEY)
+      mapper.readValue<Array<StateDto>>(stateStr, Array<StateDto>::class.java)
         .associateBy(StateDto::id)
         .toMutableMap()
     } else {
